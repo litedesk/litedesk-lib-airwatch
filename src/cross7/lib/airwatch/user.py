@@ -15,19 +15,7 @@
 # limitations under the License.
 
 
-import requests
-from requests.auth import HTTPBasicAuth
-
-class BaseObject(object):
-
-    @classmethod
-    def call_api(cls, endpoint, admin, password, token, data=None):
-	headers = {'aw-tenant-code': token}
-        response = requests.post(endpoint, data=data, auth=HTTPBasicAuth(admin, password), headers=headers)
-        if response.status_code == 200:
-            return (True, response.text)
-        else:
-            return (False, response)
+from base import BaseObject
 
 
 class User(BaseObject):
@@ -40,7 +28,7 @@ class User(BaseObject):
         <UserName>{0}</UserName>
         <SecurityType>directory</SecurityType>
         </User>
-        '''.format(username)     
+        '''.format(username)
         return cls.call_api(endpoint, admin, password, token, content)
 
     @classmethod
@@ -62,9 +50,3 @@ class User(BaseObject):
     def unassign_group(cls, base_url, admin, password, token, userid, groupid):
         endpoint = '{0}/API/v1/system/usergroups/{1}/user/{2}/removeuserfromgroup'.format(base_url, userid, groupid)
         return cls.call_api(endpoint, admin, password, token)
-
-
-
-
-
-
