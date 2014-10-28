@@ -18,23 +18,23 @@
 from setuptools import setup
 
 
-setup(name='cross7-lib-airwatch',
+setup(name='litedesk-lib-airwatch',
     version='0.0.1',
-    description='Airwatch library for Cross7',
+    description='Airwatch library for LiteDesk',
     author='Łukasz Biernot',
     author_email='lukasz.biernot@lgmail.com',
     url='http://laboratories.telekom.com',
     packages=[
-        'cross7.lib.airwatch',
+        'litedesk.lib.airwatch',
     ],
     package_dir={
-        'cross7.lib.airwatch': 'src/cross7/lib/airwatch',
+        'litedesk.lib.airwatch': 'src/litedesk/lib/airwatch',
     },
-    namespace_packages=['cross7', 'cross7.lib'],
+    namespace_packages=['litedesk', 'litedesk.lib'],
     install_requires=['requests'],
     zip_safe=False,
     classifiers=[
         'Operating System :: Linux'
     ],
-    keywords='cross7 airwatch',
+    keywords='litedesk airwatch',
 )
