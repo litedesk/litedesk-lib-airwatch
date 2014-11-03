@@ -18,35 +18,64 @@
 from base import BaseObject
 
 
+class UserAlreadyRegisteredError(Exception):
+    pass
+
+
 class User(BaseObject):
 
     @classmethod
-    def create(cls, base_url, admin, password, token, username):
-        endpoint = '{0}/API/v1/system/users/adduser'.format(base_url)
-        content = '''
-        <User xmlns="http://www.air-watch.com/servicemodel/resources">
-        <UserName>{0}</UserName>
-        <SecurityType>directory</SecurityType>
-        </User>
-        '''.format(username)
-        return cls.call_api(endpoint, admin, password, token, content)
+    def create(cls, client, username):
+        if cls.get_remote(client, username) is not None:
+            raise UserAlreadyRegisteredError
+
+        endpoint = 'system/users/adduser'
+        response = client.call_api('POST', endpoint, data={
+            'username': username,
+            'SecurityType': 'directory',
+            'Content-Type': 'application/json'
+            })
+        response.raise_for_status()
+        return cls(client, **response.json())
 
     @classmethod
-    def activate(cls, base_url, admin, password, token, userid):
-        endpoint = '{0}/API/v1/system/users/{1}/activate'.format(base_url, userid)
-        return cls.call_api(endpoint, admin, password, token)
+    def get_remote(cls, client, username):
+        endpoint = 'system/users/search'
+        response = client.call_api('GET', endpoint, params={'username': username})
+        response.raise_for_status()
+        if response.status_code == 204:
+            return None
+        try:
+            users = [u for u in response.json().get('Users') if u.get('UserName') == username]
+            return cls(client, **users.pop())
+        except IndexError:
+            return None
 
-    @classmethod
-    def deactivate(cls, base_url, admin, password, token, userid):
-        endpoint = '{0}/API/v1/system/users/{1}/deactivate'.format(base_url, userid)
-        return cls.call_api(endpoint, admin, password, token)
+    def _get_id(self):
+        if getattr(self, 'Id'): return self.Id.get('Value')
+        return None
 
-    @classmethod
-    def assign_group(cls, base_url, admin, password, token, userid, groupid):
-        endpoint = '{0}/API/v1/system/usergroups/{1}/user/{2}/addusertogroup'.format(base_url, userid, groupid)
-        return cls.call_api(endpoint, admin, password, token)
+    def _set_id(self, value):
+        self.Id = {'Value': value}
 
-    @classmethod
-    def unassign_group(cls, base_url, admin, password, token, userid, groupid):
-        endpoint = '{0}/API/v1/system/usergroups/{1}/user/{2}/removeuserfromgroup'.format(base_url, userid, groupid)
-        return cls.call_api(endpoint, admin, password, token)
+    def activate(self):
+        endpoint = 'system/users/{1}/activate'.format(self.id)
+        response = self._client.call_api('POST', endpoint)
+        response.raise_for_status()
+
+    def deactivate(self):
+        endpoint = 'system/users/{1}/deactivate'.format(self.id)
+        response = self._client.call_api('POST', endpoint)
+        response.raise_for_status()
+
+    def add_to_group(self, group_id):
+        endpoint = 'system/usergroups/{1}/user/{2}/addusertogroup'.format(self.id, group_id)
+        response = self._client.call_api('POST', endpoint)
+        response.raise_for_status()
+
+    def remove_from_group(self, group_id):
+        endpoint = 'system/usergroups/%s/user/%s/removeuserfromgroup' % (self.id, group_id)
+        response = self._client.call_api('POST', endpoint)
+        response.raise_for_status()
+
+    id = property(_get_id, _set_id)

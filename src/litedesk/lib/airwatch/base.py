@@ -15,15 +15,8 @@
 # limitations under the License.
 
 
-import requests
-from requests.auth import HTTPBasicAuth
-
-
 class BaseObject(object):
-
-    @classmethod
-    def call_api(cls, endpoint, admin, password, token, data=None):
-	headers = {'aw-tenant-code': token}
-        response = requests.post(endpoint, data=data, auth=HTTPBasicAuth(admin, password), headers=headers)
-        response.raise_for_status()
-        return response
+    def __init__(self, client, *args, **kw):
+        self._client = client
+        for k, v in kw.items():
+            setattr(self, k, v)
