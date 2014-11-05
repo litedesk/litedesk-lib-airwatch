@@ -15,10 +15,14 @@
 # limitations under the License.
 
 
-from base import BaseObject
+from base import BaseObject, check_response
 
 
 class UserAlreadyRegisteredError(Exception):
+    pass
+
+
+class UserAlreadyActivatedError(Exception):
     pass
 
 
@@ -57,6 +61,7 @@ class User(BaseObject):
     def _set_id(self, value):
         self.Id = {'Value': value}
 
+    @check_response('User is already active.', UserAlreadyActivatedError)
     def activate(self):
         endpoint = 'system/users/{0}/activate'.format(self.id)
         response = self._client.call_api('POST', endpoint)
