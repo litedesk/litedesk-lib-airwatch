@@ -27,7 +27,8 @@ class Client(object):
         self._session.auth = (username, password)
         self._session.headers.update({
             'aw-tenant-code': self.token,
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
             })
 
     def call_api(self, method, endpoint, data=None, **kw):

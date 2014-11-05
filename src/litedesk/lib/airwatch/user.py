@@ -33,10 +33,9 @@ class User(BaseObject):
         response = client.call_api('POST', endpoint, data={
             'username': username,
             'SecurityType': 'directory',
-            'Content-Type': 'application/json'
             })
         response.raise_for_status()
-        return cls(client, **response.json())
+        return cls.get_remote(client, username)
 
     @classmethod
     def get_remote(cls, client, username):
@@ -59,23 +58,28 @@ class User(BaseObject):
         self.Id = {'Value': value}
 
     def activate(self):
-        endpoint = 'system/users/{1}/activate'.format(self.id)
+        endpoint = 'system/users/{0}/activate'.format(self.id)
         response = self._client.call_api('POST', endpoint)
         response.raise_for_status()
 
     def deactivate(self):
-        endpoint = 'system/users/{1}/deactivate'.format(self.id)
+        endpoint = 'system/users/{0}/deactivate'.format(self.id)
         response = self._client.call_api('POST', endpoint)
         response.raise_for_status()
 
     def add_to_group(self, group_id):
-        endpoint = 'system/usergroups/{1}/user/{2}/addusertogroup'.format(self.id, group_id)
+        endpoint = 'system/usergroups/{0}/user/{1}/addusertogroup'.format(group_id, self.id)
         response = self._client.call_api('POST', endpoint)
         response.raise_for_status()
 
     def remove_from_group(self, group_id):
-        endpoint = 'system/usergroups/%s/user/%s/removeuserfromgroup' % (self.id, group_id)
+        endpoint = 'system/usergroups/%s/user/%s/removeuserfromgroup' % (group_id, self.id)
         response = self._client.call_api('POST', endpoint)
+        response.raise_for_status()
+
+    def delete(self):
+        endpoint = 'system/users/%s/delete' % (self.id, )
+        response = self._client.call_api('DELETE', endpoint)
         response.raise_for_status()
 
     id = property(_get_id, _set_id)
