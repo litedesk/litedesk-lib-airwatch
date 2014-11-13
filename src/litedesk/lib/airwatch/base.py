@@ -17,13 +17,14 @@
 import requests
 
 
-def check_response(known_error_message=None, exception_to_raise=None):
+def check_response(exception_to_raise=None):
     def decorator(func):
         def proxy(self, *args, **kw):
             try:
                 result = func(self, *args, **kw)
             except requests.HTTPError, http_error:
                 error_message = http_error.response.json().get('Message')
+                known_error_message = getattr(exception_to_raise, 'RESPONSE_MESSAGE')
                 if known_error_message is not None and known_error_message == error_message:
                     raise exception_to_raise
                 else:
