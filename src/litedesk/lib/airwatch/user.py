@@ -15,11 +15,23 @@
 # limitations under the License.
 
 
-from base import BaseObject
+from base import BaseObject, check_response
 
 
 class UserAlreadyRegisteredError(Exception):
     pass
+
+
+class UserAlreadyActivatedError(Exception):
+    RESPONSE_MESSAGE = 'User is already active.'
+
+
+class UserAlreadyEnrolledError(Exception):
+    RESPONSE_MESSAGE = 'Enrollment User is already assigned to the User Group.'
+
+
+class UserNotEnrolledError(Exception):
+    RESPONSE_MESSAGE = 'Enrollment User is not assigned to the User Group.'
 
 
 class User(BaseObject):
@@ -57,6 +69,7 @@ class User(BaseObject):
     def _set_id(self, value):
         self.Id = {'Value': value}
 
+    @check_response(UserAlreadyActivatedError)
     def activate(self):
         endpoint = 'system/users/{0}/activate'.format(self.id)
         response = self._client.call_api('POST', endpoint)
@@ -67,11 +80,13 @@ class User(BaseObject):
         response = self._client.call_api('POST', endpoint)
         response.raise_for_status()
 
+    @check_response(UserAlreadyEnrolledError)
     def add_to_group(self, group_id):
         endpoint = 'system/usergroups/{0}/user/{1}/addusertogroup'.format(group_id, self.id)
         response = self._client.call_api('POST', endpoint)
         response.raise_for_status()
 
+    @check_response(UserNotEnrolledError)
     def remove_from_group(self, group_id):
         endpoint = 'system/usergroups/%s/user/%s/removeuserfromgroup' % (group_id, self.id)
         response = self._client.call_api('POST', endpoint)

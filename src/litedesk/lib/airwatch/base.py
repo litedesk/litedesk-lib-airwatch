@@ -14,6 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import requests
+
+
+def check_response(exception_to_raise=None):
+    def decorator(func):
+        def proxy(self, *args, **kw):
+            try:
+                result = func(self, *args, **kw)
+            except requests.HTTPError, http_error:
+                error_message = http_error.response.json().get('Message')
+                known_error_message = getattr(exception_to_raise, 'RESPONSE_MESSAGE')
+                if known_error_message is not None and known_error_message == error_message:
+                    raise exception_to_raise
+                else:
+                    raise http_error
+            return result
+        return proxy
+    return decorator
+
 
 class BaseObject(object):
     def __init__(self, client, *args, **kw):
