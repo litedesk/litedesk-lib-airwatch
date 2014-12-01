@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(name='litedesk-lib-airwatch',
@@ -24,12 +24,8 @@ setup(name='litedesk-lib-airwatch',
     author='Łukasz Biernot',
     author_email='lukasz.biernot@lgmail.com',
     url='http://laboratories.telekom.com',
-    packages=[
-        'litedesk.lib.airwatch',
-    ],
-    package_dir={
-        'litedesk.lib.airwatch': 'src/litedesk/lib/airwatch',
-    },
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     namespace_packages=['litedesk', 'litedesk.lib'],
     install_requires=['requests'],
     zip_safe=False,
