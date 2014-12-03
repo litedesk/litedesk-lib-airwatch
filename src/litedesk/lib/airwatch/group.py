@@ -35,10 +35,7 @@ class SmartGroup(BaseObject):
         endpoint = '/mdm/smartgroups/search'
         response = client.call_api('GET', endpoint, params=kwargs)
         response.raise_for_status()
-        return [
-            self.__class__(client, **attrs)
-            for attrs in response.json()
-        ]
+        return [cls(client, **attrs) for attrs in response.json()]
 
     def update(self, **kwargs):
         endpoint = 'mdm/smartgroups/{0}/update'.format(self.id)
