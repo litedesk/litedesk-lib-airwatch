@@ -17,4 +17,4 @@ import user
 import client
 
 
-__all__ = ['user', 'client']
+__all__ = ['user', 'client', 'group']
