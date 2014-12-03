@@ -40,4 +40,8 @@ class SmartGroup(BaseObject):
             for attrs in response.json()
         ]
 
+    def update(self, **kwargs):
+        endpoint = 'mdm/smartgroups/{0}/update'.format(self.id)
+        response = client.call_api('POST', endpoint, data=kwargs)
+        response.raise_for_status()
 
