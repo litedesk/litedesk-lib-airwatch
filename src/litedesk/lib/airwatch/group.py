@@ -26,3 +26,18 @@ class UserGroup(BaseObject):
         response = client.call_api('GET', endpoint)
         response.raise_for_status()
         return [user.get('UserName') for user in response.json().get('EnrollmentUser')]
+
+
+class SmartGroup(BaseObject):
+
+    @classmethod
+    def search(cls, client, **kwargs):
+        endpoint = '/mdm/smartgroups/search'
+        response = client.call_api('GET', endpoint, params=kwargs)
+        response.raise_for_status()
+        return [
+            self.__class__(client, **attrs)
+            for attrs in response.json()
+        ]
+
+
