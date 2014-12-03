@@ -34,6 +34,10 @@ class UserNotEnrolledError(Exception):
     RESPONSE_MESSAGE = 'Enrollment User is not assigned to the User Group.'
 
 
+class UserNotActiveError(Exception):
+    RESPONSE_MESSAGE = 'User is already inactive.'
+
+
 class User(BaseObject):
 
     @classmethod
@@ -75,6 +79,7 @@ class User(BaseObject):
         response = self._client.call_api('POST', endpoint)
         response.raise_for_status()
 
+    @check_response(UserNotActiveError)
     def deactivate(self):
         endpoint = 'system/users/{0}/deactivate'.format(self.id)
         response = self._client.call_api('POST', endpoint)
