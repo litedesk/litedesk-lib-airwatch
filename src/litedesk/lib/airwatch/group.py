@@ -65,7 +65,10 @@ class SmartGroup(BaseObject):
         self.__update(UserAdditions=self.UserAdditions)
 
     def remove_member(self, user):
-        self.UserAdditions.remove({'Id': user.id, 'Name': user.UserName})
+        try:
+            self.UserAdditions.remove({'Id': user.id, 'Name': user.UserName})
+        except ValueError:
+            pass
         self.__update(UserAdditions=self.UserAdditions)
 
 
