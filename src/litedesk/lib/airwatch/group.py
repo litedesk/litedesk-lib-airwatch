@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 
 from base import BaseObject
 from user import User
@@ -60,15 +61,27 @@ class SmartGroup(BaseObject):
             for user in self.UserAdditions
         ]
 
+    @staticmethod
+    def __user_additions_to_set(user_additions):
+        return {(user['Id'], user['Name']) for user in user_additions}
+
+    @staticmethod
+    def __user_additons_from_set(user_additions_set):
+        return [{'Id': user[0], 'Name': user[1]} for user in user_additions_set]
+
+    def __membership_manipulation_common(self):
+        user_additions_set = self.__user_additions_to_set(self.UserAdditions)
+        count = len(user_additions_set)
+        yield user_additions_set
+        if count != len(user_additions_set):
+            user_additions = self.__user_additons_from_set(user_additions_set)
+            self.__update(UserAdditions=user_additions)
+            self.UserAdditions = user_additions
+
     def add_member(self, user):
-        self.UserAdditions.append({'Id': user.id, 'Name': user.UserName})
-        self.__update(UserAdditions=self.UserAdditions)
+        for user_additions_set in self.__membership_manipulation_common():
+            user_additions_set.add((user.id, user.UserName))
 
     def remove_member(self, user):
-        try:
-            self.UserAdditions.remove({'Id': user.id, 'Name': user.UserName})
-        except ValueError:
-            pass
-        self.__update(UserAdditions=self.UserAdditions)
-
-
+        for user_additions_set in self.__membership_manipulation_common():
+            user_additions_set.discard((user.id, user.UserName))
