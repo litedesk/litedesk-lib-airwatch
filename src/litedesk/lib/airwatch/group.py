@@ -61,11 +61,11 @@ class SmartGroup(BaseObject):
         ]
 
     def add_member(self, user):
-        self.UserAdditions.append({'Id': user.Id, 'Name': user.Name})
+        self.UserAdditions.append({'Id': user.Id, 'Name': user.UserName})
         self.__update(UserAdditions=self.UserAdditions)
 
     def remove_member(self, user):
-        self.UserAdditions.remove({'Id': user.Id, 'Name': user.Name})
+        self.UserAdditions.remove({'Id': user.Id, 'Name': user.UserName})
         self.__update(UserAdditions=self.UserAdditions)
 
 
