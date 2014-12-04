@@ -16,6 +16,7 @@
 
 
 from base import BaseObject
+from user import User
 
 
 class UserGroup(BaseObject):
@@ -36,11 +37,35 @@ class SmartGroup(BaseObject):
         response = client.call_api('GET', endpoint, params=kwargs)
         response.raise_for_status()
         return [
-            cls(client, **attrs) for attrs in response.json().get('SmartGroups')
+            cls.get_remote(client, attrs['SmartGroupID'])
+            for attrs in response.json().get('SmartGroups')
         ]
 
-    def update(self, **kwargs):
+    @classmethod
+    def get_remote(cls, client, id):
+        endpoint = 'mdm/smartgroups/{0}'.format(id)
+        response = client.call_api('GET', endpoint)
+        response.raise_for_status()
+        return cls(client, **response.json())
+
+    def __update(self, **kwargs):
         endpoint = 'mdm/smartgroups/{0}/update'.format(self.SmartGroupID)
         response = self._client.call_api('POST', endpoint, data=kwargs)
         response.raise_for_status()
+
+    @property
+    def members(self):
+        return [
+            User.get_remote(self._client, user.Name)
+            for user in self.UserAdditions
+        ]
+
+    def add_member(self, user):
+        self.UserAdditions.append({'Id': user.Id, 'Name': user.Name})
+        self.__update(UserAdditions=self.UserAdditions)
+
+    def remove_member(self, user):
+        self.UserAdditions.remove({'Id': user.Id, 'Name': user.Name})
+        self.__update(UserAdditions=self.UserAdditions)
+
 
