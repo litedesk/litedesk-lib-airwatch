@@ -56,7 +56,7 @@ class SmartGroup(BaseObject):
     @property
     def members(self):
         return [
-            User.get_remote(self._client, user.UserName)
+            User.get_remote(self._client, user['Name'])
             for user in self.UserAdditions
         ]
 
