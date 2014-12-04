@@ -80,8 +80,8 @@ class SmartGroup(BaseObject):
 
     def add_member(self, user):
         for user_additions_set in self.__membership_manipulation_common():
-            user_additions_set.add((user.id, user.UserName))
+            user_additions_set.add((str(user.id), user.UserName))
 
     def remove_member(self, user):
         for user_additions_set in self.__membership_manipulation_common():
-            user_additions_set.discard((user.id, user.UserName))
+            user_additions_set.discard((str(user.id), user.UserName))
