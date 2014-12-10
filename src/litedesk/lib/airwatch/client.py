@@ -48,8 +48,8 @@ class Client(object):
 
     @staticmethod
     def __exponential_backoff(callable, *args, **kw):
-        for i in xrange(6):
-            time.sleep(0.5 * i)
+        for i in xrange(4):
+            time.sleep(pow(2, i) * 0.5 - 0.5)
             try:
                 return callable(*args, **kw)
             except Exception, e:
