@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import json
+import time
 
 import requests
 
@@ -37,9 +38,21 @@ class Client(object):
 
         full_url = '%s/API/v1/%s' % (self.server_url, endpoint)
 
-        return {
+        request_method = {
             'GET': self._session.get,
             'PUT': self._session.put,
             'POST': self._session.post,
             'DELETE': self._session.delete
-            }.get(method, self._session.get)(full_url, **kw)
+        }.get(method, self._session.get)
+        return self.__exponential_backoff(request_method, full_url, **kw)
+
+    @staticmethod
+    def __exponential_backoff(callable, *args, **kw):
+        for i in xrange(6):
+            time.sleep(0.5 * i)
+            try:
+                return callable(*args, **kw)
+            except Exception, e:
+                pass
+        else:
+            raise e
