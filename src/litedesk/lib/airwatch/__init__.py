@@ -16,5 +16,7 @@
 import user
 import client
 import group
+import device
+import app
 
-__all__ = ['user', 'client', 'group']
+__all__ = ['user', 'client', 'group', 'device', 'app']
