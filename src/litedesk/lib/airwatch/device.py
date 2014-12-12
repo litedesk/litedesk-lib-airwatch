@@ -23,10 +23,13 @@ class Device(BaseObject):
         endpoint = 'mdm/devices/search'
         response = client.call_api('GET', endpoint, params=kwargs)
         response.raise_for_status()
-        return [
-            cls(client, **attrs)
-            for attrs in response.json().get('Devices')
-        ]
+        try:
+            return [
+                cls(client, **attrs)
+                for attrs in response.json().get('Devices')
+            ]
+        except:
+            return []
 
     @property
     def installed_apps(self):
