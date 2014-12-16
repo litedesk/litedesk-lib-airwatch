@@ -42,7 +42,7 @@ class UserGroup(BaseObject):
     def _membership_manipulation_common(self, user, endpoint_suffix, if_exists):
         # if_exists says if operation is valid when user is already a member
         # checking for identity cause True and False are singletons
-        if if_exists is (user.UserName in self.usernames_by_group_id(
+        if if_exists is not (user.UserName in self.usernames_by_group_id(
             self._client, self.UserGroupId
         )):
             return
