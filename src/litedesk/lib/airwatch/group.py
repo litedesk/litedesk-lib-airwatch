@@ -27,8 +27,36 @@ class UserGroup(BaseObject):
         endpoint = 'system/usergroups/{0}/users'.format(group_id)
         response = client.call_api('GET', endpoint)
         response.raise_for_status()
-        return [user.get('UserName') for user in response.json().get('EnrollmentUser')]
+        return [
+            u.get('UserName') for u in response.json().get('EnrollmentUser')
+        ]
 
+    @classmethod
+    def get_remote(cls, client, group_name):
+        endpoint = 'system/usergroups/custom/search'
+        params = {'groupname': group_name}
+        response = client.call_api('GET', endpoint, params=params)
+        response.raise_for_status()
+        return cls(client, **response.json().get('UserGroup')[0])
+
+    def _membership_manipulation_common(self, user, endpoint_suffix, if_exists):
+        # if_exists says if operation is valid when user is already a member
+        # checking for identity cause True and False are singletons
+        if if_exists is (
+            user.UserName in self.usernames_by_group_id(self.UserGroupId)
+        ):
+            return
+        endpoint = 'system/usergroups/{0}/user/{1}/{2}'.format(
+            self.UserGroupId, user.id, endpoint_suffix
+        )
+        response = self._client.call_api('POST', endpoint)
+        response.raise_for_status()
+
+    def add_member(self, user):
+        self._membership_manipulation_common(user, 'addusertogroup', False)
+
+    def remove_member(self, user):
+        self._membership_manipulation_common(user, 'removeuserfromgroup', True)
 
 class SmartGroup(BaseObject):
 
