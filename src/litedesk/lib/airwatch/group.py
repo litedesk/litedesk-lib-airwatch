@@ -168,7 +168,7 @@ class UserGroupHacked(UserGroup):
             smart_group for smart_group in SmartGroup.search(self._client)
             if self.UserGroupName in (
                 user_group['Name'] for user_group in smart_group.UserGroups
-            )
+            ) and smart_group.Name not in ('All', 'Staging User')
         ]
 
     def _replace_smart_group(self, smart_group):
