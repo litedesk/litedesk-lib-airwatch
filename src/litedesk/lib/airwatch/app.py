@@ -46,7 +46,7 @@ class App(BaseObject):
         response = self._client.call_api(
             'POST',
             endpoint.format(
-                self.Id['Value'], smart_group.SmartGroupID['Value']
+                self.Id['Value'], smart_group.SmartGroupID
             )
         )
         response.raise_for_status()

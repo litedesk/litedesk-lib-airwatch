@@ -85,12 +85,12 @@ class SmartGroup(BaseObject):
         return cls(client, **response.json())
 
     def delete(self):
-        endpoint = 'mdm/smartgroups/{0}/delete'.format(self.SmartGroupID['Value'])
+        endpoint = 'mdm/smartgroups/{0}/delete'.format(self.SmartGroupID)
         response = self._client.call_api('DELETE', endpoint)
         response.raise_for_status()
 
     def _update(self, **kwargs):
-        endpoint = 'mdm/smartgroups/{0}/update'.format(self.SmartGroupID['Value'])
+        endpoint = 'mdm/smartgroups/{0}/update'.format(self.SmartGroupID)
         response = self._client.call_api('POST', endpoint, data=kwargs)
         response.raise_for_status()
 
@@ -105,7 +105,7 @@ class SmartGroup(BaseObject):
     def apps(self):
         return [
             app for app in App.search(self._client, pagesize=5000)
-            if self.SmartGroupID['Value'] in (
+            if self.SmartGroupID in (
                 smart_group['Id'] for smart_group in app.SmartGroups
             )
         ]
