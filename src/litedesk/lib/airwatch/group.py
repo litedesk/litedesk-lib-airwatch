@@ -28,8 +28,12 @@ class UserGroup(BaseObject):
         endpoint = 'system/usergroups/{0}/users'.format(group_id)
         response = client.call_api('GET', endpoint)
         response.raise_for_status()
+        try:
+            json = response.json()
+        except:
+            return []
         return [
-            u.get('UserName') for u in response.json().get('EnrollmentUser')
+            u.get('UserName') for u in json.get('EnrollmentUser')
         ]
 
     @classmethod
