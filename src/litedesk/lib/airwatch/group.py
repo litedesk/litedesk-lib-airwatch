@@ -159,7 +159,6 @@ class UserGroupHacked(UserGroup):
                     sg.Name for sg in smart_groups
                 )
             ):
-                print 'Skipping Smart Group {0}'.format(smart_group.Name)
                 continue
             self._replace_smart_group(smart_group)
 
@@ -175,7 +174,6 @@ class UserGroupHacked(UserGroup):
     def _replace_smart_group(self, smart_group):
         name = smart_group.Name
         temp_name = 'Hacked {0}'.format(name)
-        print 'Creating Smart Group {0}'.format(temp_name)
         try:
             new_smart_group = SmartGroup.create(
                 self._client,
@@ -201,17 +199,11 @@ class UserGroupHacked(UserGroup):
                     sg for sg in SmartGroup.search(self._client)
                     if sg.Name == temp_name
                 ][0]
-        print 'Moving apps from {0} to {1}'.format(name, temp_name)
         self._move_apps(smart_group, new_smart_group)
-        print 'Deleting Smart Group {0}'.format(name)
         smart_group.delete()
-        print 'Renaming Smart Group {0} to {1}'.format(temp_name, name)
         new_smart_group._update(Name=name)
-        print 'Smart Group {0} replaced'.format(name)
 
     def _move_apps(self, smart_group, new_smart_group):
         for app in smart_group.apps:
-            print 'Adding app {0} to Smart Group {1}'.format(app.Id['Value'], new_smart_group.Name)
             app.add_smart_group(new_smart_group)
-            print 'Removing app {0} from Smart Group {1}'.format(app.Id['Value'], smart_group.Name)
             app.delete_smart_group(smart_group)
