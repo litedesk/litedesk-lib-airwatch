@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 from base import BaseObject
 from user import User
+from app import App
 
 
 class UserGroup(BaseObject):
@@ -39,7 +38,7 @@ class UserGroup(BaseObject):
         response.raise_for_status()
         return cls(client, **response.json().get('UserGroup')[0])
 
-    def _membership_manipulation_common(self, user, endpoint_suffix, if_exists):
+    def _membership_change_common(self, user, endpoint_suffix, if_exists):
         # if_exists says if operation is valid when user is already a member
         # checking for identity cause True and False are singletons
         if if_exists is not (user.UserName in self.usernames_by_group_id(
@@ -53,12 +52,20 @@ class UserGroup(BaseObject):
         response.raise_for_status()
 
     def add_member(self, user):
-        self._membership_manipulation_common(user, 'addusertogroup', False)
+        self._membership_change_common(user, 'addusertogroup', False)
 
     def remove_member(self, user):
-        self._membership_manipulation_common(user, 'removeuserfromgroup', True)
+        self._membership_change_common(user, 'removeuserfromgroup', True)
+
 
 class SmartGroup(BaseObject):
+
+    @classmethod
+    def create(cls, client, **kwargs):
+        endpoint = 'mdm/smartgroups/create'
+        response = client.call_api('POST', endpoint, data=kwargs)
+        response.raise_for_status()
+        return cls.get_remote(client, response.text)
 
     @classmethod
     def search(cls, client, **kwargs):
@@ -71,14 +78,19 @@ class SmartGroup(BaseObject):
         ]
 
     @classmethod
-    def get_remote(cls, client, id):
-        endpoint = 'mdm/smartgroups/{0}'.format(id)
+    def get_remote(cls, client, smart_group_id):
+        endpoint = 'mdm/smartgroups/{0}'.format(smart_group_id)
         response = client.call_api('GET', endpoint)
         response.raise_for_status()
         return cls(client, **response.json())
 
-    def __update(self, **kwargs):
-        endpoint = 'mdm/smartgroups/{0}/update'.format(self.SmartGroupID)
+    def delete(self):
+        endpoint = 'mdm/smartgroups/{0}/delete'.format(self.SmartGroupID['Value'])
+        response = self._client.call_api('DELETE', endpoint)
+        response.raise_for_status()
+
+    def _update(self, **kwargs):
+        endpoint = 'mdm/smartgroups/{0}/update'.format(self.SmartGroupID['Value'])
         response = self._client.call_api('POST', endpoint, data=kwargs)
         response.raise_for_status()
 
@@ -89,6 +101,15 @@ class SmartGroup(BaseObject):
             for user in self.UserAdditions
         ]
 
+    @property
+    def apps(self):
+        return [
+            app for app in App.search(self._client, pagesize=5000)
+            if self.SmartGroupID['Value'] in (
+                smart_group['Id'] for smart_group in app.SmartGroups
+            )
+        ]
+
     @staticmethod
     def __user_additions_to_set(user_additions):
         return {(user['Id'], user['Name']) for user in user_additions}
@@ -97,19 +118,82 @@ class SmartGroup(BaseObject):
     def __user_additons_from_set(user_additions_set):
         return [{'Id': user[0], 'Name': user[1]} for user in user_additions_set]
 
-    def __membership_manipulation_common(self):
+    def __membership_change_common(self):
         user_additions_set = self.__user_additions_to_set(self.UserAdditions)
         count = len(user_additions_set)
         yield user_additions_set
         if count != len(user_additions_set):
             user_additions = self.__user_additons_from_set(user_additions_set)
-            self.__update(UserAdditions=user_additions)
+            self._update(UserAdditions=user_additions)
             self.UserAdditions = user_additions
 
     def add_member(self, user):
-        for user_additions_set in self.__membership_manipulation_common():
+        for user_additions_set in self.__membership_change_common():
             user_additions_set.add((str(user.id), user.UserName))
 
     def remove_member(self, user):
-        for user_additions_set in self.__membership_manipulation_common():
+        for user_additions_set in self.__membership_change_common():
             user_additions_set.discard((str(user.id), user.UserName))
+
+
+class UserGroupHacked(UserGroup):
+    """
+    This class exists because of AirWatch backend bug in SmartGroups.
+    Currently adding/removing member of UserGroup is not guaranteed
+    to be reflected in SmartGroup, resulting in unreliable app install/uninstall
+    on user device. Once AirWatch bug is fixed, normal UserGroup should be used
+    instead of this class.
+    """
+
+    SMART_GROUP_PREFIX = 'Hacked'
+
+    def _membership_change_common(self, *args, **kw):
+        super(UserGroupHacked, self)._membership_change_common(*args, **kw)
+        for smart_group in self._smart_groups:
+            self._replace_smart_group(smart_group)
+
+    @property
+    def _smart_groups(self):
+        return [
+            smart_group for smart_group in SmartGroup.search(self._client)
+            if self.UserGroupName in (
+                user_group['Name'] for user_group in smart_group.UserGroups
+            )
+        ]
+
+    def _replace_smart_group(self, smart_group):
+        name = smart_group.Name
+        temp_name = 'Hacked {0}'.format(name)
+        if name.startswith(self.SMART_GROUP_PREFIX):
+            print 'Skipping Smart Group {0}'.format(name)
+            return
+        print 'Creating Smart Group {0}'.format(temp_name)
+        new_smart_group = SmartGroup.create(
+            self._client,
+            DeviceAdditions=smart_group.DeviceAdditions,
+            DeviceExclusions=smart_group.DeviceExclusions,
+            ManagedByOrganizationGroupId=smart_group.ManagedByOrganizationGroupId,
+            Models=smart_group.Models,
+            Name=temp_name,
+            OperatingSystems=smart_group.OperatingSystems,
+            OrganizationGroups=smart_group.OrganizationGroups,
+            Ownerships=smart_group.Ownerships,
+            Platforms=smart_group.Platforms,
+            UserAdditions=smart_group.UserAdditions,
+            UserExclusions=smart_group.UserExclusions,
+            UserGroups=smart_group.UserGroups
+        )
+        print 'Moving apps from {0} to {1}'.format(name, temp_name)
+        self._move_apps(smart_group, new_smart_group)
+        print 'Deleting Smart Group {0}'.format(name)
+        smart_group.delete()
+        print 'Renaming Smart Group {0} to {1}'.format(temp_name, name)
+        new_smart_group._update(Name=name)
+        print 'Smart Group {0} replaced'.format(name)
+
+    def _move_apps(self, smart_group, new_smart_group):
+        for app in smart_group.apps:
+            print 'Adding app {0} to Smart Group {1}'.format(new_smart_group.Name)
+            app.add_smart_group(new_smart_group)
+            print 'Removing app {0} from Smart Group {1}'.format(smart_group.Name)
+            app.delete_smart_group(smart_group)

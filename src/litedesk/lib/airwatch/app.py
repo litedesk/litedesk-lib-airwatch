@@ -27,11 +27,11 @@ class App(BaseObject):
         ]
 
     def install(self, device):
-        endpoint = 'mam/apps/public/{0}/install'.format(self.Id)
+        endpoint = 'mam/apps/public/{0}/install'.format(self.Id['Value'])
         response = self._client.call_api(
             'POST', endpoint,
             params={
-                'DeviceId': device.Id,
+                'DeviceId': device.Id['Value'],
                 'MacAddress': device.MacAddress,
                 'SerialNumber': device.SerialNumber,
                 'Udid': device.Udid
@@ -42,4 +42,22 @@ class App(BaseObject):
     def is_installed_on_device(self, device):
         return self.Id in (app.Id for app in device.installed_apps)
 
+    def _smart_group_change_common(self, smart_group, endpoint):
+        response = self._client.call_api(
+            'POST',
+            endpoint.format(
+                self.Id['Value'], smart_group.SmartGroupID['Value']
+            )
+        )
+        response.raise_for_status()
+
+    def add_smart_group(self, smart_group):
+        self._smart_group_change_common(
+            smart_group, 'mam/apps/public/{0}/addsmartgroup/{1}'
+        )
+
+    def delete_smart_group(self, smart_group):
+        self._smart_group_change_common(
+            smart_group, 'mam/apps/public/{0}/deletesmartgroup/{1}'
+        )
 
