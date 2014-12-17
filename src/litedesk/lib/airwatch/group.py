@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from requests.exceptions import HTTPError
+
 from base import BaseObject
 from user import User
 from app import App
@@ -149,7 +151,16 @@ class UserGroupHacked(UserGroup):
 
     def _membership_change_common(self, *args, **kw):
         super(UserGroupHacked, self)._membership_change_common(*args, **kw)
-        for smart_group in self._smart_groups:
+        smart_groups = self._smart_groups
+        for smart_group in smart_groups:
+            if (
+                smart_group.Name.startswith(self.SMART_GROUP_PREFIX)
+                or '{0} {1}'.format(self.SMART_GROUP_PREFIX, smart_group.Name) in (
+                    sg.Name for sg in smart_groups
+                )
+            ):
+                print 'Skipping Smart Group {0}'.format(smart_group.Name)
+                continue
             self._replace_smart_group(smart_group)
 
     @property
@@ -164,25 +175,27 @@ class UserGroupHacked(UserGroup):
     def _replace_smart_group(self, smart_group):
         name = smart_group.Name
         temp_name = 'Hacked {0}'.format(name)
-        if name.startswith(self.SMART_GROUP_PREFIX):
-            print 'Skipping Smart Group {0}'.format(name)
-            return
         print 'Creating Smart Group {0}'.format(temp_name)
-        new_smart_group = SmartGroup.create(
-            self._client,
-            DeviceAdditions=smart_group.DeviceAdditions,
-            DeviceExclusions=smart_group.DeviceExclusions,
-            ManagedByOrganizationGroupId=smart_group.ManagedByOrganizationGroupId,
-            Models=smart_group.Models,
-            Name=temp_name,
-            OperatingSystems=smart_group.OperatingSystems,
-            OrganizationGroups=smart_group.OrganizationGroups,
-            Ownerships=smart_group.Ownerships,
-            Platforms=smart_group.Platforms,
-            UserAdditions=smart_group.UserAdditions,
-            UserExclusions=smart_group.UserExclusions,
-            UserGroups=smart_group.UserGroups
-        )
+        try:
+            new_smart_group = SmartGroup.create(
+                self._client,
+                DeviceAdditions=smart_group.DeviceAdditions,
+                DeviceExclusions=smart_group.DeviceExclusions,
+                ManagedByOrganizationGroupId=smart_group.ManagedByOrganizationGroupId,
+                Models=smart_group.Models,
+                Name=temp_name,
+                OperatingSystems=smart_group.OperatingSystems,
+                OrganizationGroups=smart_group.OrganizationGroups,
+                Ownerships=smart_group.Ownerships,
+                Platforms=smart_group.Platforms,
+                UserAdditions=smart_group.UserAdditions,
+                UserExclusions=smart_group.UserExclusions,
+                UserGroups=smart_group.UserGroups
+            )
+        except HTTPError, e:
+            # Amazing, AirWatch throws 400 but Smart Group is created :)
+            if e.response.status_code != 400:
+                raise
         print 'Moving apps from {0} to {1}'.format(name, temp_name)
         self._move_apps(smart_group, new_smart_group)
         print 'Deleting Smart Group {0}'.format(name)
