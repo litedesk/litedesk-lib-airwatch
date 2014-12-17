@@ -211,7 +211,7 @@ class UserGroupHacked(UserGroup):
 
     def _move_apps(self, smart_group, new_smart_group):
         for app in smart_group.apps:
-            print 'Adding app {0} to Smart Group {1}'.format(new_smart_group.Name)
+            print 'Adding app {0} to Smart Group {1}'.format(app.ApplicationName, new_smart_group.Name)
             app.add_smart_group(new_smart_group)
-            print 'Removing app {0} from Smart Group {1}'.format(smart_group.Name)
+            print 'Removing app {0} from Smart Group {1}'.format(app.ApplicationName, smart_group.Name)
             app.delete_smart_group(smart_group)
