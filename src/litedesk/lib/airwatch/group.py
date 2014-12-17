@@ -196,6 +196,11 @@ class UserGroupHacked(UserGroup):
             # Amazing, AirWatch throws 400 but Smart Group is created :)
             if e.response.status_code != 400:
                 raise
+            else:
+                new_smart_group = [
+                    sg for sg in SmartGroup.search(self._client)
+                    if sg.Name == temp_name
+                ][0]
         print 'Moving apps from {0} to {1}'.format(name, temp_name)
         self._move_apps(smart_group, new_smart_group)
         print 'Deleting Smart Group {0}'.format(name)
